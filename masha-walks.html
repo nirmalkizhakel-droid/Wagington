@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Masha Walks</title>
+<meta name="theme-color" content="#3B2410">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Masha">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%233B2410'/><text y='.9em' font-size='80' x='10'>🐾</text></svg>">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%233B2410'/><text y='.9em' font-size='80' x='10'>🐾</text></svg>">
+<link rel="manifest" href="data:application/json,{&quot;name&quot;:&quot;Masha Walks&quot;,&quot;short_name&quot;:&quot;Masha&quot;,&quot;start_url&quot;:&quot;.&quot;,&quot;display&quot;:&quot;standalone&quot;,&quot;background_color&quot;:&quot;%23F5F0E8&quot;,&quot;theme_color&quot;:&quot;%233B2410&quot;,&quot;icons&quot;:[{&quot;src&quot;:&quot;data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%233B2410'/><text y='.9em' font-size='80' x='10'>🐾</text></svg>&quot;,&quot;sizes&quot;:&quot;any&quot;,&quot;type&quot;:&quot;image/svg+xml&quot;}]}">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+:root {
+  --bg: #F5F0E8; --cream: #FFFDF9;
+  --b9: #2C1A0E; --b8: #3B2410; --b7: #5C3D1E; --b4: #A87B52; --b2: #D4B896; --b1: #EDE5D8;
+  --nisha: #7A3520; --nisha-bg: #F3E0D8;
+  --nirmal: #1E4D2B; --nirmal-bg: #D8EDE0;
+  --wag: #1A5C57; --wag-bg: #D4EFED;
+  --amber: #7A4A0A; --amber-bg: #FFF0D0;
+  --green: #1A4D20; --green-bg: #D0EDD6;
+  --missed: #5C1A1A; --missed-bg: #FDEAEA;
+  --red-border: #E8A0A0;
+}
+html,body { height:100%; background:var(--bg); font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; color:var(--b9); }
+#app { max-width:430px; margin:0 auto; min-height:100vh; display:flex; flex-direction:column; background:var(--bg); }
+
+.header { background:var(--b8); color:#F5F0E8; padding:16px 18px; display:flex; align-items:center; gap:10px; position:sticky; top:0; z-index:100; }
+.header-title { font-size:19px; font-weight:800; }
+.header-right { margin-left:auto; display:flex; align-items:center; gap:8px; }
+.header-user { background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.25); border-radius:20px; padding:6px 14px; font-size:13px; font-weight:700; cursor:pointer; color:#EDE5D8; font-family:inherit; }
+.sync-dot { width:8px; height:8px; border-radius:50%; background:#6EE7B7; flex-shrink:0; }
+.sync-dot.syncing { background:#FCD34D; animation:pulse 1s infinite; }
+.sync-dot.error { background:#FCA5A5; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+.tabs { display:flex; background:var(--b1); border-bottom:2px solid var(--b2); }
+.tab { flex:1; padding:13px 8px; text-align:center; font-size:14px; font-weight:800; cursor:pointer; color:var(--b4); border-bottom:3px solid transparent; margin-bottom:-2px; }
+.tab.active { color:var(--b8); border-bottom-color:var(--b7); background:var(--bg); }
+
+.scroll { flex:1; overflow-y:auto; padding:16px 14px; -webkit-overflow-scrolling:touch; }
+
+.card { background:var(--cream); border-radius:16px; border:1.5px solid var(--b2); padding:16px 18px; margin-bottom:14px; }
+.card-title { font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:1.2px; color:var(--b4); margin-bottom:12px; }
+
+.today-hdr { background:var(--b8); border-radius:16px; padding:18px; margin-bottom:14px; text-align:center; color:#F5F0E8; }
+.today-lbl { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1.5px; opacity:0.6; margin-bottom:4px; }
+.today-big { font-size:21px; font-weight:800; line-height:1.3; }
+.today-sub { font-size:13px; opacity:0.6; margin-top:4px; }
+
+.walk-row { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+.walk-name { font-size:22px; font-weight:900; }
+.walk-name.nisha { color:var(--nisha); }
+.walk-name.nirmal { color:var(--nirmal); }
+.walk-name.wag { color:var(--wag); }
+.walk-meta { font-size:12px; color:var(--b4); font-weight:600; margin-top:3px; }
+
+.btn { border:none; border-radius:12px; padding:10px 16px; font-size:13px; font-weight:800; cursor:pointer; font-family:inherit; display:block; margin-bottom:7px; white-space:nowrap; text-align:center; }
+.btn:last-child { margin-bottom:0; }
+.btn:active { opacity:0.8; }
+.btn-confirm { background:var(--green-bg); color:var(--green); border:1.5px solid #A8D8B0; }
+.btn-cover   { background:var(--amber-bg); color:var(--amber); border:1.5px solid #F0C870; }
+.btn-missed  { background:var(--missed-bg); color:var(--missed); border:1.5px solid var(--red-border); }
+.btn-undo    { background:var(--b1); color:var(--b7); border:1.5px solid var(--b2); font-size:12px; padding:7px 14px; }
+.btn:disabled { opacity:0.5; cursor:default; }
+
+.badge { display:inline-flex; align-items:center; gap:5px; border-radius:10px; padding:8px 12px; font-size:13px; font-weight:700; }
+.badge-done   { background:var(--green-bg); color:var(--green); }
+.badge-cover  { background:var(--amber-bg); color:var(--amber); }
+.badge-wag    { background:var(--wag-bg); color:var(--wag); }
+.badge-missed { background:var(--missed-bg); color:var(--missed); }
+.badge-row    { display:flex; flex-direction:column; align-items:flex-end; gap:6px; }
+
+.debt-box { background:#FFF5E0; border:1.5px solid #F0C870; border-radius:16px; padding:14px 18px; margin-bottom:14px; }
+.debt-title { font-size:13px; font-weight:800; color:var(--amber); margin-bottom:8px; }
+.debt-item { font-size:13px; color:var(--amber); font-weight:600; margin-bottom:5px; }
+
+.stats-lbl { font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:1px; color:var(--b4); margin:12px 0 8px; }
+.stats-lbl:first-child { margin-top:0; }
+.stats-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.stat-box { background:var(--bg); border-radius:12px; padding:12px; text-align:center; border:1.5px solid var(--b1); }
+.stat-lbl2 { font-size:12px; color:var(--b4); font-weight:700; margin-bottom:4px; }
+.stat-num { font-size:30px; font-weight:900; }
+.stat-num.nisha  { color:var(--nisha); }
+.stat-num.nirmal { color:var(--nirmal); }
+
+.cal-nav { display:flex; align-items:center; justify-content:space-between; padding:14px 18px; background:var(--b1); border-bottom:1.5px solid var(--b2); }
+.cal-month-lbl { font-size:17px; font-weight:800; color:var(--b8); }
+.cal-btn { background:var(--cream); border:1.5px solid var(--b2); border-radius:10px; padding:7px 16px; font-size:17px; font-weight:700; cursor:pointer; color:var(--b7); font-family:inherit; }
+.cal-inner { padding:10px 8px; }
+.cal-dow { display:grid; grid-template-columns:repeat(7,1fr); gap:3px; margin-bottom:4px; }
+.cal-dow-lbl { text-align:center; font-size:10px; font-weight:800; color:var(--b4); text-transform:uppercase; padding:3px 0; }
+.cal-grid2 { display:flex; flex-direction:column; gap:3px; }
+.cal-week { display:grid; grid-template-columns:repeat(7,1fr); gap:3px; }
+.cal-cell { background:var(--cream); border-radius:9px; border:1.5px solid var(--b1); padding:4px 3px; min-height:74px; overflow:hidden; }
+.cal-cell.is-today { border:2px solid var(--b7); background:#FFFBF3; }
+.cal-cell.other { opacity:0.3; background:var(--bg); }
+.cal-cell.past { background:#F7F3EC; }
+.cal-date2 { font-size:11px; font-weight:800; color:var(--b7); margin-bottom:3px; line-height:1; }
+.today-dot { background:var(--b8); color:white; width:18px; height:18px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:9px; font-weight:800; margin-bottom:3px; }
+.cslot { border-radius:4px; padding:2px 4px; margin-bottom:2px; font-size:9px; font-weight:700; line-height:1.4; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.cs-nisha  { background:var(--nisha-bg); color:var(--nisha); }
+.cs-nirmal { background:var(--nirmal-bg); color:var(--nirmal); }
+.cs-wag    { background:var(--wag-bg); color:var(--wag); }
+.cs-done   { background:var(--green-bg); color:var(--green); }
+.cs-cover  { background:var(--amber-bg); color:var(--amber); }
+.cs-missed { background:var(--missed-bg); color:var(--missed); }
+
+/* Loading / error screens */
+.splash { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:40px; text-align:center; gap:14px; }
+.splash-icon { font-size:56px; }
+.splash-title { font-size:20px; font-weight:800; color:var(--b8); }
+.splash-sub { font-size:14px; color:var(--b4); font-weight:600; }
+.spinner { width:32px; height:32px; border:3px solid var(--b2); border-top-color:var(--b7); border-radius:50%; animation:spin 0.7s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+
+.login { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:40px 28px; text-align:center; }
+.login-icon { font-size:64px; margin-bottom:10px; }
+.login-title { font-size:28px; font-weight:900; color:var(--b8); margin-bottom:6px; }
+.login-sub { font-size:15px; color:var(--b4); font-weight:600; margin-bottom:36px; }
+.login-btn { width:100%; padding:18px; border-radius:16px; border:none; font-family:inherit; font-size:17px; font-weight:800; cursor:pointer; margin-bottom:12px; }
+.login-btn:active { opacity:0.85; }
+.login-nisha  { background:var(--nisha); color:white; }
+.login-nirmal { background:var(--nirmal); color:white; }
+.login-hint { font-size:12px; color:var(--b4); font-weight:600; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+// ─── SUPABASE CONFIG ──────────────────────────────────────────────────────────
+var SUPA_URL = 'https://rvosetueszwlhubmrcdg.supabase.co';
+var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ2b3NldHVlc3p3bGh1Ym1yY2RnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3NzcyNjEsImV4cCI6MjA5MjM1MzI2MX0.VmMpgp7akkNZvz3KF8rupAQUIYnb99TUyo-TbEk8GWY';
+
+// ─── SUPABASE HELPERS ─────────────────────────────────────────────────────────
+function supaFetch(method, path, body){
+  var opts = {
+    method: method,
+    headers: {
+      'apikey': SUPA_KEY,
+      'Authorization': 'Bearer '+SUPA_KEY,
+      'Content-Type': 'application/json',
+      'Prefer': method==='POST' ? 'resolution=merge-duplicates,return=representation' : ''
+    }
+  };
+  if(body) opts.body = JSON.stringify(body);
+  return fetch(SUPA_URL+'/rest/v1/'+path, opts).then(function(r){
+    if(!r.ok) return r.text().then(function(t){ throw new Error(t); });
+    return r.json().catch(function(){ return []; });
+  });
+}
+
+function loadLogs(){
+  return supaFetch('GET','walk_logs?select=date_key,session,by_user,covered,missed&order=date_key.asc')
+    .then(function(rows){
+      var logs = {};
+      rows.forEach(function(r){
+        if(!logs[r.date_key]) logs[r.date_key] = {};
+        logs[r.date_key][r.session] = {
+          by: r.by_user,
+          covered: r.covered,
+          missed: r.missed
+        };
+      });
+      return logs;
+    });
+}
+
+function saveLog(key, session, type, byUser){
+  var row = {
+    date_key: key,
+    session:  session,
+    by_user:  type==='missed' ? null : byUser,
+    covered:  type==='covered',
+    missed:   type==='missed'
+  };
+  // upsert via POST with merge-duplicates prefer header
+  return supaFetch('POST','walk_logs', row);
+}
+
+function deleteLog(key, session){
+  return supaFetch('DELETE','walk_logs?date_key=eq.'+key+'&session=eq.'+session, null);
+}
+
+// ─── CONSTANTS ────────────────────────────────────────────────────────────────
+var START   = new Date(2026,3,22);
+var USERS   = ['Nisha','Nirmal'];
+var MONTHS  = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+var SHORT_M = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+// ─── DATE HELPERS ─────────────────────────────────────────────────────────────
+function dk(d){ return d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate()); }
+function p2(n){ return String(n).padStart(2,'0'); }
+function fromDk(k){ var p=k.split('-').map(Number); return new Date(p[0],p[1]-1,p[2]); }
+function addDays(d,n){ var r=new Date(d); r.setDate(r.getDate()+n); return r; }
+function today0(){ var t=new Date(); t.setHours(0,0,0,0); return t; }
+function isWagDay(d){ var w=d.getDay(); return w===2||w===4; }
+
+// ─── SCHEDULE ENGINE ──────────────────────────────────────────────────────────
+function computeSchedule(logs, upTo){
+  var result = {};
+  var end = upTo || addDays(today0(),120);
+  var cur = new Date(START);
+  var mNat=0, eNat=0, mX=[0,0], eX=[0,0];
+
+  while(cur<=end){
+    var key = dk(cur);
+    var log = logs[key]||{};
+    var wag = isWagDay(cur);
+
+    // MORNING
+    var mIdx = mX[0]>0?0: mX[1]>0?1: mNat%2;
+    var mLog = log.morning;
+    if(mLog){
+      if(mLog.missed){ /* no advance */ }
+      else if(mLog.covered){ mX[mIdx]++; mNat++; }
+      else { if(mX[mIdx]>0) mX[mIdx]--; else mNat++; }
+    } else { if(mX[mIdx]>0) mX[mIdx]--; else mNat++; }
+
+    // EVENING
+    var eAssigned = 'Masha';
+    if(!wag){
+      var eIdx = eX[0]>0?0: eX[1]>0?1: eNat%2;
+      eAssigned = USERS[eIdx];
+      var eLog = log.evening;
+      if(eLog){
+        if(eLog.missed){ /* no advance */ }
+        else if(eLog.covered){ eX[eIdx]++; eNat++; }
+        else { if(eX[eIdx]>0) eX[eIdx]--; else eNat++; }
+      } else { if(eX[eIdx]>0) eX[eIdx]--; else eNat++; }
+    }
+
+    result[key] = { morning: USERS[mX[0]>0?0:mX[1]>0?1:mNat%2], evening: eAssigned };
+
+    // re-derive morning after advance
+    var mIdxFinal = mX[0]>0?0: mX[1]>0?1: mNat%2;
+    // (stored before advance above — fix by storing before advancing)
+    cur.setDate(cur.getDate()+1);
+  }
+
+  result._debt = {
+    morning:{ Nisha:mX[0], Nirmal:mX[1] },
+    evening:{ Nisha:eX[0], Nirmal:eX[1] }
+  };
+  return result;
+}
+
+// Cleaner version that stores assigned BEFORE advancing state
+function buildSchedule(logs, upTo){
+  var result = {};
+  var end = upTo || addDays(today0(),120);
+  var cur = new Date(START);
+  var mNat=0, eNat=0, mX=[0,0], eX=[0,0];
+
+  while(cur<=end){
+    var key = dk(cur);
+    var log = logs[key]||{};
+    var wag = isWagDay(cur);
+
+    // Determine assigned FIRST
+    var mIdx = mX[0]>0?0: mX[1]>0?1: mNat%2;
+    var mAssigned = USERS[mIdx];
+
+    var eAssigned = 'Masha';
+    var eIdx = -1;
+    if(!wag){
+      eIdx = eX[0]>0?0: eX[1]>0?1: eNat%2;
+      eAssigned = USERS[eIdx];
+    }
+
+    result[key] = { morning: mAssigned, evening: eAssigned };
+
+    // Now advance morning state
+    var mLog = log.morning;
+    if(mLog){
+      if(mLog.missed){ /* don't advance — same person next time */ }
+      else if(mLog.covered){ mX[mIdx]++; mNat++; }
+      else { if(mX[mIdx]>0) mX[mIdx]--; else mNat++; }
+    } else { if(mX[mIdx]>0) mX[mIdx]--; else mNat++; }
+
+    // Advance evening state
+    if(!wag){
+      var eLog = log.evening;
+      if(eLog){
+        if(eLog.missed){ /* don't advance */ }
+        else if(eLog.covered){ eX[eIdx]++; eNat++; }
+        else { if(eX[eIdx]>0) eX[eIdx]--; else eNat++; }
+      } else { if(eX[eIdx]>0) eX[eIdx]--; else eNat++; }
+    }
+
+    cur.setDate(cur.getDate()+1);
+  }
+
+  result._debt = {
+    morning:{ Nisha:mX[0], Nirmal:mX[1] },
+    evening:{ Nisha:eX[0], Nirmal:eX[1] }
+  };
+  return result;
+}
+
+function getStats(schedule, logs, month, year){
+  var stats = { Nisha:{morning:0,evening:0}, Nirmal:{morning:0,evening:0} };
+  var today = today0();
+  for(var k in schedule){
+    if(k[0]==='_') continue;
+    var d = fromDk(k);
+    if(d.getMonth()!==month||d.getFullYear()!==year||d>today) continue;
+    var v=schedule[k], log=logs[k]||{};
+    if(v.morning&&v.morning!=='Masha'){
+      var ml=log.morning;
+      if(ml&&!ml.missed){ var mw=ml.covered?ml.by:v.morning; if(stats[mw]) stats[mw].morning++; }
+      else if(!ml){ if(stats[v.morning]) stats[v.morning].morning++; }
+    }
+    if(v.evening&&v.evening!=='Masha'){
+      var el2=log.evening;
+      if(el2&&!el2.missed){ var ew=el2.covered?el2.by:v.evening; if(stats[ew]) stats[ew].evening++; }
+      else if(!el2){ if(stats[v.evening]) stats[v.evening].evening++; }
+    }
+  }
+  return stats;
+}
+
+// ─── STATE ────────────────────────────────────────────────────────────────────
+var state = {
+  user:    localStorage.getItem('wag_user')||null,
+  logs:    {},
+  tab:     'home',
+  calM:    new Date().getMonth(),
+  calY:    new Date().getFullYear(),
+  loading: true,
+  syncing: false,
+  error:   null
+};
+
+// ─── SYNC ─────────────────────────────────────────────────────────────────────
+function syncFromServer(){
+  state.syncing = true;
+  renderSyncDot();
+  return loadLogs().then(function(logs){
+    state.logs    = logs;
+    state.loading = false;
+    state.syncing = false;
+    state.error   = null;
+    render();
+  }).catch(function(e){
+    state.syncing = false;
+    state.error   = 'Sync failed — check connection';
+    state.loading = false;
+    render();
+  });
+}
+
+function renderSyncDot(){
+  var dot = document.querySelector('.sync-dot');
+  if(!dot) return;
+  dot.className = 'sync-dot'+(state.syncing?' syncing':state.error?' error':'');
+}
+
+// Poll every 15 seconds to stay in sync with other phone
+setInterval(function(){
+  if(state.user && !state.loading) syncFromServer();
+}, 15000);
+
+// ─── ACTIONS ──────────────────────────────────────────────────────────────────
+function logWalk(key, session, type, btn){
+  if(btn){ btn.disabled=true; }
+  state.syncing = true; renderSyncDot();
+  saveLog(key, session, type, state.user)
+    .then(function(){ return syncFromServer(); })
+    .catch(function(){ state.error='Save failed'; state.syncing=false; render(); });
+}
+
+function undoWalk(key, session, btn){
+  if(btn){ btn.disabled=true; }
+  state.syncing = true; renderSyncDot();
+  deleteLog(key, session)
+    .then(function(){ return syncFromServer(); })
+    .catch(function(){ state.error='Undo failed'; state.syncing=false; render(); });
+}
+
+// ─── HELPERS ──────────────────────────────────────────────────────────────────
+function el(tag,cls){ var e=document.createElement(tag||'div'); if(cls) e.className=cls; return e; }
+
+// ─── RENDER ───────────────────────────────────────────────────────────────────
+function render(){
+  var app = document.getElementById('app');
+  app.innerHTML = '';
+
+  // Loading splash
+  if(state.loading){
+    var sp = el('div','splash');
+    sp.innerHTML = '<div class="splash-icon">🐾</div><div class="splash-title">Masha Walks</div><div class="spinner"></div><div class="splash-sub">Loading walks...</div>';
+    app.appendChild(sp);
+    return;
+  }
+
+  if(!state.user){ app.appendChild(renderLogin()); return; }
+
+  var today    = today0();
+  var todayKey = dk(today);
+  var schedule = buildSchedule(state.logs, addDays(today,120));
+  var debt     = schedule._debt||{morning:{Nisha:0,Nirmal:0},evening:{Nisha:0,Nirmal:0}};
+
+  // Header
+  var hdr = el('div','header');
+  var ht  = el('span','header-title'); ht.textContent='🐾 Masha Walks';
+  var hr  = el('div','header-right');
+  var dot = el('div','sync-dot'+(state.syncing?' syncing':state.error?' error':''));
+  var ub  = el('button','header-user');
+  ub.textContent = state.user+' ↩';
+  ub.onclick = function(){ state.user=null; localStorage.removeItem('wag_user'); render(); };
+  hr.appendChild(dot); hr.appendChild(ub);
+  hdr.appendChild(ht); hdr.appendChild(hr);
+  app.appendChild(hdr);
+
+  // Error banner
+  if(state.error){
+    var eb = el('div','');
+    eb.style.cssText='background:#FDEAEA;color:#5C1A1A;font-size:13px;font-weight:700;padding:10px 18px;text-align:center;';
+    eb.textContent='⚠️ '+state.error+' — tap to retry';
+    eb.onclick = function(){ state.error=null; syncFromServer(); };
+    app.appendChild(eb);
+  }
+
+  // Tabs
+  var tabs = el('div','tabs');
+  [['home','🏠 Home'],['calendar','📅 Calendar']].forEach(function(pair){
+    var t = el('div','tab'+(state.tab===pair[0]?' active':''));
+    t.textContent = pair[1];
+    t.onclick = function(){ state.tab=pair[0]; render(); };
+    tabs.appendChild(t);
+  });
+  app.appendChild(tabs);
+
+  if(state.tab==='home'){
+    var scroll = el('div','scroll');
+
+    // Today header
+    var th = el('div','today-hdr');
+    var tl = el('div','today-lbl'); tl.textContent='Today';
+    var tb = el('div','today-big'); tb.textContent=today.toLocaleDateString('en-SG',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+    var ts = el('div','today-sub'); ts.textContent='Logged in as '+state.user;
+    th.appendChild(tl); th.appendChild(tb); th.appendChild(ts);
+    scroll.appendChild(th);
+
+    // Debt panel
+    var hasDebt=debt.morning.Nisha||debt.morning.Nirmal||debt.evening.Nisha||debt.evening.Nirmal;
+    if(hasDebt){
+      var dp=el('div','debt-box');
+      var dt=el('div','debt-title'); dt.textContent='⚠️ Outstanding Walk Debts'; dp.appendChild(dt);
+      [[debt.morning.Nisha,'🌸 Nisha','morning'],[debt.morning.Nirmal,'🌿 Nirmal','morning'],
+       [debt.evening.Nisha,'🌸 Nisha','evening'],[debt.evening.Nirmal,'🌿 Nirmal','evening']]
+      .forEach(function(d2){
+        if(d2[0]>0){
+          var di=el('div','debt-item');
+          di.textContent=d2[1]+' owes '+d2[0]+' '+d2[2]+' walk'+(d2[0]>1?'s':'');
+          dp.appendChild(di);
+        }
+      });
+      scroll.appendChild(dp);
+    }
+
+    var todaySched = schedule[todayKey]||{};
+    var todayLog   = state.logs[todayKey]||{};
+    scroll.appendChild(renderWalkCard('☀️ Morning Walk','morning',todaySched.morning,todayLog.morning,todayKey,true));
+    scroll.appendChild(renderWalkCard('🌙 Evening Walk','evening',todaySched.evening,todayLog.evening,todayKey,true));
+
+    // Stats
+    var stats = getStats(schedule, state.logs, today.getMonth(), today.getFullYear());
+    var sc=el('div','card');
+    var sct=el('div','card-title'); sct.textContent='📊 '+SHORT_M[today.getMonth()]+' Stats'; sc.appendChild(sct);
+    ['morning','evening'].forEach(function(sess){
+      var sl=el('div','stats-lbl'); sl.textContent=(sess==='morning'?'Morning':'Evening')+' walks'; sc.appendChild(sl);
+      var sg=el('div','stats-grid');
+      ['Nisha','Nirmal'].forEach(function(u){
+        var sb=el('div','stat-box');
+        var sl2=el('div','stat-lbl2'); sl2.textContent=(u==='Nisha'?'🌸':'🌿')+' '+u; sb.appendChild(sl2);
+        var sn=el('div','stat-num '+u.toLowerCase()); sn.textContent=stats[u][sess]; sb.appendChild(sn);
+        sg.appendChild(sb);
+      });
+      sc.appendChild(sg);
+    });
+    scroll.appendChild(sc);
+    app.appendChild(scroll);
+
+  } else {
+    app.appendChild(renderCalendar(schedule));
+  }
+}
+
+// ─── WALK CARD ────────────────────────────────────────────────────────────────
+function renderWalkCard(label, session, assigned, log, key, isToday){
+  var card=el('div','card');
+  var ct=el('div','card-title'); ct.textContent=label; card.appendChild(ct);
+  var row=el('div','walk-row');
+  var left=el('div','');
+  var isWagSlot=assigned==='Masha';
+  var isMyTurn=assigned===state.user;
+
+  var wname=el('div','walk-name '+(isWagSlot?'wag':(assigned||'').toLowerCase()));
+  wname.textContent=isWagSlot?'🐾 Masha':(assigned||'—');
+  left.appendChild(wname);
+  if(!isWagSlot){
+    var meta=el('div','walk-meta');
+    meta.textContent=isMyTurn?'← Your turn':(assigned||'')+"'s turn";
+    left.appendChild(meta);
+  }
+  row.appendChild(left);
+
+  var right=el('div','');
+  if(isWagSlot){
+    var wb=el('span','badge badge-wag'); wb.textContent='Dog walking service'; right.appendChild(wb);
+  } else if(log){
+    var brow=el('div','badge-row');
+    var badge=el('span','');
+    if(log.missed){ badge.className='badge badge-missed'; badge.textContent='❌ Missed by both'; }
+    else if(log.covered){ badge.className='badge badge-cover'; badge.textContent='🔁 Covered by '+log.by; }
+    else { badge.className='badge badge-done'; badge.textContent='✅ Done by '+log.by; }
+    brow.appendChild(badge);
+    if(isToday){
+      var ub2=el('button','btn btn-undo'); ub2.textContent='↩ Undo';
+      ub2.onclick=function(){ undoWalk(key,session,ub2); };
+      brow.appendChild(ub2);
+    }
+    right.appendChild(brow);
+  } else if(isToday){
+    if(isMyTurn){
+      var cb=el('button','btn btn-confirm'); cb.textContent='✅ I did this walk';
+      cb.onclick=function(){ logWalk(key,session,'confirm',cb); };
+      right.appendChild(cb);
+    } else {
+      var cvb=el('button','btn btn-cover'); cvb.textContent='🔁 I covered this';
+      cvb.onclick=function(){ logWalk(key,session,'covered',cvb); };
+      right.appendChild(cvb);
+    }
+    var mb=el('button','btn btn-missed'); mb.textContent='❌ Neither of us walked';
+    mb.onclick=function(){ logWalk(key,session,'missed',mb); };
+    right.appendChild(mb);
+  }
+  row.appendChild(right);
+  card.appendChild(row);
+  return card;
+}
+
+// ─── CALENDAR ─────────────────────────────────────────────────────────────────
+function renderCalendar(schedule){
+  var wrap=el('div',''); wrap.style.cssText='flex:1;overflow-y:auto;display:flex;flex-direction:column;';
+  var today=today0(), todayKey=dk(today), m=state.calM, y=state.calY;
+
+  var nav=el('div','cal-nav');
+  var prev=el('button','cal-btn'); prev.textContent='‹';
+  prev.onclick=function(){ var nm=state.calM-1,ny=state.calY; if(nm<0){nm=11;ny--;} state.calM=nm;state.calY=ny; render(); };
+  var lbl=el('span','cal-month-lbl'); lbl.textContent=MONTHS[m]+' '+y;
+  var nxt=el('button','cal-btn'); nxt.textContent='›';
+  nxt.onclick=function(){ var nm=state.calM+1,ny=state.calY; if(nm>11){nm=0;ny++;} state.calM=nm;state.calY=ny; render(); };
+  nav.appendChild(prev); nav.appendChild(lbl); nav.appendChild(nxt);
+  wrap.appendChild(nav);
+
+  var inner=el('div','cal-inner');
+  var dow=el('div','cal-dow');
+  ['Su','Mo','Tu','We','Th','Fr','Sa'].forEach(function(d){ var dl=el('div','cal-dow-lbl'); dl.textContent=d; dow.appendChild(dl); });
+  inner.appendChild(dow);
+
+  var firstDay=new Date(y,m,1), lastDay=new Date(y,m+1,0), startDow=firstDay.getDay();
+  var cells=[];
+  for(var i=startDow-1;i>=0;i--) cells.push({date:addDays(firstDay,-i-1),other:true});
+  for(var d=new Date(firstDay);d<=lastDay;d.setDate(d.getDate()+1)) cells.push({date:new Date(d),other:false});
+  while(cells.length%7!==0) cells.push({date:addDays(cells[cells.length-1].date,1),other:true});
+
+  var grid=el('div','cal-grid2');
+  for(var w=0;w<cells.length;w+=7){
+    var week=el('div','cal-week');
+    for(var i2=0;i2<7;i2++){
+      var c=cells[w+i2], key=dk(c.date), sch=schedule[key]||{}, log=state.logs[key]||{};
+      var isToday2=key===todayKey, isPast=c.date<today;
+      var cls='cal-cell'+(isToday2?' is-today':'')+(c.other?' other':'')+(isPast&&!isToday2?' past':'');
+      var cell=el('div',cls);
+      if(isToday2){ var td=el('div','today-dot'); td.textContent=c.date.getDate(); cell.appendChild(td); }
+      else { var cd=el('div','cal-date2'); cd.textContent=c.date.getDate(); cell.appendChild(cd); }
+      if(!c.other){
+        var mA=sch.morning;
+        if(mA){
+          var ms=el('div','cslot'), ml=log.morning;
+          if(ml&&ml.missed)       {ms.className='cslot cs-missed';ms.textContent='❌Miss';}
+          else if(ml&&ml.covered) {ms.className='cslot cs-cover'; ms.textContent='🔁'+(ml.by||'').slice(0,3);}
+          else if(ml||isPast)     {ms.className='cslot cs-done';  ms.textContent='✅'+mA.slice(0,3);}
+          else                    {ms.className='cslot cs-'+(mA==='Nisha'?'nisha':'nirmal'); ms.textContent=(mA==='Nisha'?'🌸':'🌿')+mA.slice(0,3);}
+          cell.appendChild(ms);
+        }
+        var eA=sch.evening;
+        if(eA){
+          var es=el('div','cslot'), el3=log.evening;
+          if(eA==='Masha')         {es.className='cslot cs-wag';    es.textContent='🐾Wag';}
+          else if(el3&&el3.missed)     {es.className='cslot cs-missed'; es.textContent='❌Miss';}
+          else if(el3&&el3.covered)    {es.className='cslot cs-cover';  es.textContent='🔁'+(el3.by||'').slice(0,3);}
+          else if(el3||isPast)         {es.className='cslot cs-done';   es.textContent='✅'+eA.slice(0,3);}
+          else                         {es.className='cslot cs-'+(eA==='Nisha'?'nisha':'nirmal'); es.textContent=(eA==='Nisha'?'🌸':'🌿')+eA.slice(0,3);}
+          cell.appendChild(es);
+        }
+      }
+      week.appendChild(cell);
+    }
+    grid.appendChild(week);
+  }
+  inner.appendChild(grid);
+  wrap.appendChild(inner);
+  return wrap;
+}
+
+// ─── LOGIN ────────────────────────────────────────────────────────────────────
+function renderLogin(){
+  var wrap=el('div',''); wrap.style.cssText='max-width:430px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;background:var(--bg);';
+  var login=el('div','login');
+  var icon=el('div','login-icon'); icon.textContent='🐾'; login.appendChild(icon);
+  var title=el('div','login-title'); title.textContent='Masha Walks'; login.appendChild(title);
+  var sub=el('div','login-sub'); sub.textContent="Who's taking the lead today?"; login.appendChild(sub);
+  var bn=el('button','login-btn login-nisha'); bn.textContent="🌸  I'm Nisha";
+  bn.onclick=function(){ state.user='Nisha'; localStorage.setItem('wag_user','Nisha'); render(); };
+  var bnr=el('button','login-btn login-nirmal'); bnr.textContent="🌿  I'm Nirmal";
+  bnr.onclick=function(){ state.user='Nirmal'; localStorage.setItem('wag_user','Nirmal'); render(); };
+  var hint=el('div','login-hint'); hint.textContent='Walks sync across both phones in real time';
+  login.appendChild(bn); login.appendChild(bnr); login.appendChild(hint);
+  wrap.appendChild(login);
+  return wrap;
+}
+
+// ─── BOOT ─────────────────────────────────────────────────────────────────────
+render(); // show loading splash immediately
+syncFromServer(); // then fetch from Supabase
+</script>
+</body>
+</html>
