@@ -460,15 +460,10 @@ function render(){
     if(hasDebt){
       var dp=el('div','debt-box');
       var dt=el('div','debt-title'); dt.textContent='⚠️ Outstanding Walk Debts'; dp.appendChild(dt);
-      [[debt.morning.Nisha,'🌸 Nisha','morning'],[debt.morning.Nirmal,'🌿 Nirmal','morning'],
-       [debt.evening.Nisha,'🌸 Nisha','evening'],[debt.evening.Nirmal,'🌿 Nirmal','evening']]
-      .forEach(function(d2){
-        if(d2[0]>0){
-          var di=el('div','debt-item');
-          var who=d2[1].replace('🌸 ','').replace('🌿 ',''); var other=who==='Nisha'?'Nirmal':'Nisha'; var sess=d2[2].charAt(0).toUpperCase()+d2[2].slice(1); di.textContent=sess+' walks: '+who+' owes '+other+' '+d2[0]+' walk'+(d2[0]>1?'s':'');
-          dp.appendChild(di);
-        }
-      });
+      if(debt.morning.Nisha>0){ var di=el('div','debt-item'); di.textContent='Morning walks: Nisha owes Nirmal '+debt.morning.Nisha+' walk'+(debt.morning.Nisha>1?'s':''); dp.appendChild(di); }
+      if(debt.morning.Nirmal>0){ var di=el('div','debt-item'); di.textContent='Morning walks: Nirmal owes Nisha '+debt.morning.Nirmal+' walk'+(debt.morning.Nirmal>1?'s':''); dp.appendChild(di); }
+      if(debt.evening.Nisha>0){ var di=el('div','debt-item'); di.textContent='Evening walks: Nisha owes Nirmal '+debt.evening.Nisha+' walk'+(debt.evening.Nisha>1?'s':''); dp.appendChild(di); }
+      if(debt.evening.Nirmal>0){ var di=el('div','debt-item'); di.textContent='Evening walks: Nirmal owes Nisha '+debt.evening.Nirmal+' walk'+(debt.evening.Nirmal>1?'s':''); dp.appendChild(di); }
       scroll.appendChild(dp);
     }
 
