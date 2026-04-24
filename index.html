@@ -199,7 +199,67 @@ function addDays(d,n){ var r=new Date(d); r.setDate(r.getDate()+n); return r; }
 function today0(){ var t=new Date(); t.setHours(0,0,0,0); return t; }
 function isWagDay(d){ var w=d.getDay(); return w===2||w===4; }
 
-// ─── SCHEDULE ENGINE ──────────────────────────────────────────────────────────
+// ─── SCHEDULE ENGINE (balance-based) ─────────────────────────────────────────
+// mBal = Nisha_walks_done - Nirmal_walks_done (morning session)
+// positive → Nisha ahead → assign Nirmal. negative → Nirmal ahead → assign Nisha. zero → tiebreak alternation.
+// Covered: credit goes to the coverer. Missed: no credit, no balance change, same person assigned next.
+function buildSchedule(logs, upTo){
+  var result = {};
+  var end = upTo || addDays(today0(), 120);
+  var cur = new Date(START);
+  var mBal=0, eBal=0;   // running walk-count balance (Nisha - Nirmal)
+  var mTurn=0, eTurn=0; // tiebreak alternation index (0=Nisha first)
+
+  while(cur <= end){
+    var key = dk(cur);
+    var log = logs[key] || {};
+    var wag = isWagDay(cur);
+
+    // Assign morning
+    var mAssigned;
+    if(mBal > 0)      mAssigned = 'Nirmal';
+    else if(mBal < 0) mAssigned = 'Nisha';
+    else              mAssigned = USERS[mTurn % 2];
+
+    // Assign evening
+    var eAssigned = 'Masha';
+    if(!wag){
+      if(eBal > 0)      eAssigned = 'Nirmal';
+      else if(eBal < 0) eAssigned = 'Nisha';
+      else              eAssigned = USERS[eTurn % 2];
+    }
+
+    result[key] = { morning: mAssigned, evening: eAssigned };
+
+    // Advance morning balance
+    var mLog = log.morning;
+    if(!(mLog && mLog.missed)){
+      var mDoer = (mLog && mLog.covered) ? mLog.by : mAssigned;
+      if(mDoer === 'Nisha') mBal++; else mBal--;
+      mTurn++;
+    }
+
+    // Advance evening balance
+    if(!wag){
+      var eLog = log.evening;
+      if(!(eLog && eLog.missed)){
+        var eDoer = (eLog && eLog.covered) ? eLog.by : eAssigned;
+        if(eDoer === 'Nisha') eBal++; else eBal--;
+        eTurn++;
+      }
+    }
+
+    cur.setDate(cur.getDate() + 1);
+  }
+
+  result._debt = {
+    morning: { Nisha: mBal < 0 ? -mBal : 0, Nirmal: mBal > 0 ? mBal : 0 },
+    evening: { Nisha: eBal < 0 ? -eBal : 0, Nirmal: eBal > 0 ? eBal : 0 }
+  };
+  return result;
+}
+
+// ─── OLD ENGINE (kept for reference, not used) ────────────────────────────────
 function computeSchedule(logs, upTo){
   var result = {};
   var end = upTo || addDays(today0(),120);
