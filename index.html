@@ -253,8 +253,8 @@ function buildSchedule(logs, upTo){
   }
 
   result._debt = {
-    morning: { Nisha: mBal < 0 ? -mBal : 0, Nirmal: mBal > 0 ? mBal : 0 },
-    evening: { Nisha: eBal < 0 ? -eBal : 0, Nirmal: eBal > 0 ? eBal : 0 }
+    morning: { Nisha: mBal > 0 ? mBal : 0, Nirmal: mBal < 0 ? -mBal : 0 },
+    evening: { Nisha: eBal > 0 ? eBal : 0, Nirmal: eBal < 0 ? -eBal : 0 }
   };
   return result;
 }
