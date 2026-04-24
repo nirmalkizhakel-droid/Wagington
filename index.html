@@ -465,7 +465,7 @@ function render(){
       .forEach(function(d2){
         if(d2[0]>0){
           var di=el('div','debt-item');
-          di.textContent=d2[1]+' owes '+d2[0]+' '+d2[2]+' walk'+(d2[0]>1?'s':'');
+          var who=d2[1].replace('🌸 ','').replace('🌿 ',''); var other=who==='Nisha'?'Nirmal':'Nisha'; var sess=d2[2].charAt(0).toUpperCase()+d2[2].slice(1); di.textContent=sess+' walks: '+who+' owes '+other+' '+d2[0]+' walk'+(d2[0]>1?'s':'');
           dp.appendChild(di);
         }
       });
