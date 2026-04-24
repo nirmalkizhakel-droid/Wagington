@@ -308,58 +308,7 @@ function computeSchedule(logs, upTo){
   return result;
 }
 
-// Cleaner version that stores assigned BEFORE advancing state
-function buildSchedule(logs, upTo){
-  var result = {};
-  var end = upTo || addDays(today0(),120);
-  var cur = new Date(START);
-  var mNat=0, eNat=0, mX=[0,0], eX=[0,0];
 
-  while(cur<=end){
-    var key = dk(cur);
-    var log = logs[key]||{};
-    var wag = isWagDay(cur);
-
-    // Determine assigned FIRST
-    var mIdx = mX[0]>0?0: mX[1]>0?1: mNat%2;
-    var mAssigned = USERS[mIdx];
-
-    var eAssigned = 'Masha';
-    var eIdx = -1;
-    if(!wag){
-      eIdx = eX[0]>0?0: eX[1]>0?1: eNat%2;
-      eAssigned = USERS[eIdx];
-    }
-
-    result[key] = { morning: mAssigned, evening: eAssigned };
-
-    // Now advance morning state
-    var mLog = log.morning;
-    if(mLog){
-      if(mLog.missed){ /* don't advance — same person next time */ }
-      else if(mLog.covered){ mX[mIdx]++; mNat++; }
-      else { if(mX[mIdx]>0) mX[mIdx]--; else mNat++; }
-    } else { if(mX[mIdx]>0) mX[mIdx]--; else mNat++; }
-
-    // Advance evening state
-    if(!wag){
-      var eLog = log.evening;
-      if(eLog){
-        if(eLog.missed){ /* don't advance */ }
-        else if(eLog.covered){ eX[eIdx]++; eNat++; }
-        else { if(eX[eIdx]>0) eX[eIdx]--; else eNat++; }
-      } else { if(eX[eIdx]>0) eX[eIdx]--; else eNat++; }
-    }
-
-    cur.setDate(cur.getDate()+1);
-  }
-
-  result._debt = {
-    morning:{ Nisha:mX[0], Nirmal:mX[1] },
-    evening:{ Nisha:eX[0], Nirmal:eX[1] }
-  };
-  return result;
-}
 
 function getStats(schedule, logs, month, year){
   var stats = { Nisha:{morning:0,evening:0}, Nirmal:{morning:0,evening:0} };
