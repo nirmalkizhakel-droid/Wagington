@@ -365,13 +365,13 @@ function computeSchedule(logs, upTo){
 
 
 
-function getStats(schedule, logs, month, year){
+function getOverallStats(schedule, logs){
   var stats = { Nisha:{morning:0,evening:0}, Nirmal:{morning:0,evening:0} };
   var today = today0();
   for(var k in schedule){
     if(k[0]==='_') continue;
     var d = fromDk(k);
-    if(d.getMonth()!==month||d.getFullYear()!==year||d>today) continue;
+    if(d>today) continue;
     var v=schedule[k], log=logs[k]||{};
     if(v.morning&&v.morning!=='Masha'){
       var ml=log.morning;
