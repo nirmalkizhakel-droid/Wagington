@@ -126,6 +126,20 @@ html,body { height:100%; background:var(--bg); font-family:-apple-system,BlinkMa
 .login-nisha  { background:var(--nisha); color:white; }
 .login-nirmal { background:var(--nirmal); color:white; }
 .login-hint { font-size:12px; color:var(--b4); font-weight:600; }
+
+/* Vacation modal */
+.modal-overlay { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:200; display:flex; align-items:center; justify-content:center; padding:20px; }
+.modal { background:var(--cream); border-radius:18px; padding:20px; width:100%; max-width:390px; max-height:80vh; overflow-y:auto; }
+.modal-title { font-size:16px; font-weight:800; color:var(--b8); margin-bottom:16px; }
+.modal-row { display:flex; gap:10px; margin-bottom:12px; align-items:center; }
+.modal-label { font-size:12px; font-weight:700; color:var(--b4); width:60px; flex-shrink:0; }
+.modal-input { flex:1; border:1.5px solid var(--b2); border-radius:10px; padding:9px 12px; font-size:14px; font-family:inherit; background:var(--bg); color:var(--b9); }
+.vac-list { margin-bottom:14px; }
+.vac-item { display:flex; align-items:center; justify-content:space-between; background:var(--wag-bg); border-radius:10px; padding:10px 14px; margin-bottom:8px; }
+.vac-item-text { font-size:13px; font-weight:700; color:var(--wag); }
+.vac-del { background:none; border:none; font-size:16px; cursor:pointer; color:var(--wag); padding:2px 6px; }
+.btn-vac { background:var(--wag-bg); color:var(--wag); border:1.5px solid #A8D8D4; border-radius:10px; padding:8px 14px; font-size:13px; font-weight:800; cursor:pointer; font-family:inherit; }
+.cs-vac { background:var(--wag-bg); color:var(--wag); }
 </style>
 </head>
 <body>
@@ -185,6 +199,16 @@ function deleteLog(key, session){
   return supaFetch('DELETE','walk_logs?date_key=eq.'+key+'&session=eq.'+session, null);
 }
 
+function loadVacations(){
+  return supaFetch('GET','vacations?select=start_date,end_date&order=start_date.asc').then(function(rows){ return rows||[]; });
+}
+function saveVacation(start, end){
+  return supaFetch('POST','vacations', {start_date:start, end_date:end});
+}
+function deleteVacation(start, end){
+  return supaFetch('DELETE','vacations?start_date=eq.'+start+'&end_date=eq.'+end, null);
+}
+
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
 var START   = new Date(2026,3,22);
 var USERS   = ['Nisha','Nirmal'];
@@ -203,27 +227,50 @@ function isWagDay(d){ var w=d.getDay(); return w===2||w===4; }
 // mBal = Nisha_walks_done - Nirmal_walks_done (morning session)
 // positive → Nisha ahead → assign Nirmal. negative → Nirmal ahead → assign Nisha. zero → tiebreak alternation.
 // Covered: credit goes to the coverer. Missed: no credit, no balance change, same person assigned next.
-function buildSchedule(logs, upTo){
+function buildSchedule(logs, upTo, vacations){
+  var vacs = vacations || state.vacations || [];
   var result = {};
   var end = upTo || addDays(today0(), 120);
   var cur = new Date(START);
-  var mBal=0, eBal=0;   // running walk-count balance (Nisha - Nirmal)
-  var mTurn=0, eTurn=0; // tiebreak alternation index (0=Nisha first)
+  var mBal=0, eBal=0;
+  var mTurn=0, eTurn=0;
+
+  function isVacFull(key){
+    for(var i=0;i<vacs.length;i++){
+      var v=vacs[i];
+      if(key>v.start_date && key<=v.end_date) return true;
+    }
+    return false;
+  }
+  function isVacStart(key){
+    for(var i=0;i<vacs.length;i++){
+      if(vacs[i].start_date===key) return true;
+    }
+    return false;
+  }
 
   while(cur <= end){
     var key = dk(cur);
     var log = logs[key] || {};
     var wag = isWagDay(cur);
+    var vacFull = isVacFull(key);   // full vacation day: both morning+evening = Wagington
+    var vacStart = isVacStart(key); // start day: morning = normal, evening = Wagington
 
     // Assign morning
     var mAssigned;
-    if(mBal > 0)      mAssigned = 'Nirmal';
-    else if(mBal < 0) mAssigned = 'Nisha';
-    else              mAssigned = USERS[mTurn % 2];
+    if(vacFull){
+      mAssigned = 'Wagington';
+    } else {
+      if(mBal > 0)      mAssigned = 'Nirmal';
+      else if(mBal < 0) mAssigned = 'Nisha';
+      else              mAssigned = USERS[mTurn % 2];
+    }
 
     // Assign evening
     var eAssigned = 'Masha';
-    if(!wag){
+    if(vacFull || vacStart){
+      eAssigned = 'Wagington';
+    } else if(!wag){
       if(eBal > 0)      eAssigned = 'Nirmal';
       else if(eBal < 0) eAssigned = 'Nisha';
       else              eAssigned = USERS[eTurn % 2];
@@ -231,16 +278,18 @@ function buildSchedule(logs, upTo){
 
     result[key] = { morning: mAssigned, evening: eAssigned };
 
-    // Advance morning balance
-    var mLog = log.morning;
-    if(!(mLog && mLog.missed)){
-      var mDoer = (mLog && mLog.covered) ? mLog.by : mAssigned;
-      if(mDoer === 'Nisha') mBal++; else mBal--;
-      mTurn++;
+    // Advance morning balance (skip vacation full days)
+    if(!vacFull){
+      var mLog = log.morning;
+      if(!(mLog && mLog.missed)){
+        var mDoer = (mLog && mLog.covered) ? mLog.by : mAssigned;
+        if(mDoer === 'Nisha') mBal++; else mBal--;
+        mTurn++;
+      }
     }
 
-    // Advance evening balance
-    if(!wag){
+    // Advance evening balance (skip vacation days and wag days)
+    if(!wag && !vacFull && !vacStart){
       var eLog = log.evening;
       if(!(eLog && eLog.missed)){
         var eDoer = (eLog && eLog.covered) ? eLog.by : eAssigned;
@@ -254,7 +303,7 @@ function buildSchedule(logs, upTo){
 
   result._debt = {
     morning: { Nisha: mBal > 0 ? mBal : 0, Nirmal: mBal < 0 ? -mBal : 0 },
-    evening: { Nisha: eBal > 0 ? eBal : 0, Nirmal: eBal < 0 ? -eBal : 0 }
+    evening: { Nisha: eBal < 0 ? -eBal : 0, Nirmal: eBal > 0 ? eBal : 0 }
   };
   return result;
 }
@@ -334,25 +383,46 @@ function getStats(schedule, logs, month, year){
 
 // ─── STATE ────────────────────────────────────────────────────────────────────
 var state = {
-  user:    localStorage.getItem('wag_user')||null,
-  logs:    {},
-  tab:     'home',
-  calM:    new Date().getMonth(),
-  calY:    new Date().getFullYear(),
-  loading: true,
-  syncing: false,
-  error:   null
+  user:      localStorage.getItem('wag_user')||null,
+  logs:      {},
+  vacations: [], // [{start_date:'YYYY-MM-DD', end_date:'YYYY-MM-DD'}]
+  tab:       'home',
+  calM:      new Date().getMonth(),
+  calY:      new Date().getFullYear(),
+  loading:   true,
+  syncing:   false,
+  error:     null,
+  showVacModal: false,
+  vacFrom:   '',
+  vacTo:     ''
 };
+
+// Returns true if date key is a vacation day (but NOT the start day morning)
+function isVacationFull(key){
+  for(var i=0;i<state.vacations.length;i++){
+    var v=state.vacations[i];
+    if(key>v.start_date && key<=v.end_date) return true;
+  }
+  return false;
+}
+// Returns true if date is start day of vacation (morning still done by Nisha/Nirmal)
+function isVacationStart(key){
+  for(var i=0;i<state.vacations.length;i++){
+    if(state.vacations[i].start_date===key) return true;
+  }
+  return false;
+}
 
 // ─── SYNC ─────────────────────────────────────────────────────────────────────
 function syncFromServer(){
   state.syncing = true;
   renderSyncDot();
-  return loadLogs().then(function(logs){
-    state.logs    = logs;
-    state.loading = false;
-    state.syncing = false;
-    state.error   = null;
+  return Promise.all([loadLogs(), loadVacations()]).then(function(res){
+    state.logs      = res[0];
+    state.vacations = res[1];
+    state.loading   = false;
+    state.syncing   = false;
+    state.error     = null;
     render();
   }).catch(function(e){
     state.syncing = false;
@@ -455,27 +525,15 @@ function render(){
     th.appendChild(tl); th.appendChild(tb); th.appendChild(ts);
     scroll.appendChild(th);
 
-    // Debt panel
-    var hasDebt=debt.morning.Nisha||debt.morning.Nirmal||debt.evening.Nisha||debt.evening.Nirmal;
-    if(hasDebt){
-      var dp=el('div','debt-box');
-      var dt=el('div','debt-title'); dt.textContent='⚠️ Outstanding Walk Debts'; dp.appendChild(dt);
-      if(debt.morning.Nisha>0){ var di=el('div','debt-item'); di.textContent='Morning walks: Nisha owes Nirmal '+debt.morning.Nisha+' walk'+(debt.morning.Nisha>1?'s':''); dp.appendChild(di); }
-      if(debt.morning.Nirmal>0){ var di=el('div','debt-item'); di.textContent='Morning walks: Nirmal owes Nisha '+debt.morning.Nirmal+' walk'+(debt.morning.Nirmal>1?'s':''); dp.appendChild(di); }
-      if(debt.evening.Nisha>0){ var di=el('div','debt-item'); di.textContent='Evening walks: Nisha owes Nirmal '+debt.evening.Nisha+' walk'+(debt.evening.Nisha>1?'s':''); dp.appendChild(di); }
-      if(debt.evening.Nirmal>0){ var di=el('div','debt-item'); di.textContent='Evening walks: Nirmal owes Nisha '+debt.evening.Nirmal+' walk'+(debt.evening.Nirmal>1?'s':''); dp.appendChild(di); }
-      scroll.appendChild(dp);
-    }
-
     var todaySched = schedule[todayKey]||{};
     var todayLog   = state.logs[todayKey]||{};
     scroll.appendChild(renderWalkCard('☀️ Morning Walk','morning',todaySched.morning,todayLog.morning,todayKey,true));
     scroll.appendChild(renderWalkCard('🌙 Evening Walk','evening',todaySched.evening,todayLog.evening,todayKey,true));
 
-    // Stats
-    var stats = getStats(schedule, state.logs, today.getMonth(), today.getFullYear());
+    // Overall stats
+    var stats = getOverallStats(schedule, state.logs);
     var sc=el('div','card');
-    var sct=el('div','card-title'); sct.textContent='📊 '+SHORT_M[today.getMonth()]+' Stats'; sc.appendChild(sct);
+    var sct=el('div','card-title'); sct.textContent='📊 Overall Stats'; sc.appendChild(sct);
     ['morning','evening'].forEach(function(sess){
       var sl=el('div','stats-lbl'); sl.textContent=(sess==='morning'?'Morning':'Evening')+' walks'; sc.appendChild(sl);
       var sg=el('div','stats-grid');
@@ -488,6 +546,9 @@ function render(){
       sc.appendChild(sg);
     });
     scroll.appendChild(sc);
+
+    // Vacation modal
+    if(state.showVacModal){ app.appendChild(renderVacModal()); }
     app.appendChild(scroll);
 
   } else {
@@ -563,6 +624,13 @@ function renderCalendar(schedule){
   nav.appendChild(prev); nav.appendChild(lbl); nav.appendChild(nxt);
   wrap.appendChild(nav);
 
+  // Vacation button bar
+  var vacBar=el('div',''); vacBar.style.cssText='padding:10px 14px 0;display:flex;justify-content:flex-end;';
+  var vacBtn=el('button','btn-vac'); vacBtn.textContent='🏖️ Masha Vacation Dates';
+  vacBtn.onclick=function(){ state.showVacModal=true; state.vacFrom=''; state.vacTo=''; render(); };
+  vacBar.appendChild(vacBtn);
+  wrap.appendChild(vacBar);
+
   var inner=el('div','cal-inner');
   var dow=el('div','cal-dow');
   ['Su','Mo','Tu','We','Th','Fr','Sa'].forEach(function(d){ var dl=el('div','cal-dow-lbl'); dl.textContent=d; dow.appendChild(dl); });
@@ -588,20 +656,22 @@ function renderCalendar(schedule){
         var mA=sch.morning;
         if(mA){
           var ms=el('div','cslot'), ml=log.morning;
-          if(ml&&ml.missed)       {ms.className='cslot cs-missed';ms.textContent='❌Miss';}
-          else if(ml&&ml.covered) {ms.className='cslot cs-cover'; ms.textContent='🔁'+(ml.by||'').slice(0,3);}
-          else if(ml||isPast)     {ms.className='cslot cs-done';  ms.textContent='✅'+mA.slice(0,3);}
+          if(mA==='Wagington')    {ms.className='cslot cs-vac';    ms.textContent='🏖️Vac';}
+          else if(ml&&ml.missed)  {ms.className='cslot cs-missed'; ms.textContent='❌Miss';}
+          else if(ml&&ml.covered) {ms.className='cslot cs-cover';  ms.textContent='🔁'+(ml.by||'').slice(0,3);}
+          else if(ml||isPast)     {ms.className='cslot cs-done';   ms.textContent='✅'+mA.slice(0,3);}
           else                    {ms.className='cslot cs-'+(mA==='Nisha'?'nisha':'nirmal'); ms.textContent=(mA==='Nisha'?'🌸':'🌿')+mA.slice(0,3);}
           cell.appendChild(ms);
         }
         var eA=sch.evening;
         if(eA){
           var es=el('div','cslot'), el3=log.evening;
-          if(eA==='Masha')         {es.className='cslot cs-wag';    es.textContent='🐾Wag';}
-          else if(el3&&el3.missed)     {es.className='cslot cs-missed'; es.textContent='❌Miss';}
-          else if(el3&&el3.covered)    {es.className='cslot cs-cover';  es.textContent='🔁'+(el3.by||'').slice(0,3);}
-          else if(el3||isPast)         {es.className='cslot cs-done';   es.textContent='✅'+eA.slice(0,3);}
-          else                         {es.className='cslot cs-'+(eA==='Nisha'?'nisha':'nirmal'); es.textContent=(eA==='Nisha'?'🌸':'🌿')+eA.slice(0,3);}
+          if(eA==='Wagington')        {es.className='cslot cs-vac';    es.textContent='🏖️Vac';}
+          else if(eA==='Masha')       {es.className='cslot cs-wag';    es.textContent='🐾Wag';}
+          else if(el3&&el3.missed)    {es.className='cslot cs-missed'; es.textContent='❌Miss';}
+          else if(el3&&el3.covered)   {es.className='cslot cs-cover';  es.textContent='🔁'+(el3.by||'').slice(0,3);}
+          else if(el3||isPast)        {es.className='cslot cs-done';   es.textContent='✅'+eA.slice(0,3);}
+          else                        {es.className='cslot cs-'+(eA==='Nisha'?'nisha':'nirmal'); es.textContent=(eA==='Nisha'?'🌸':'🌿')+eA.slice(0,3);}
           cell.appendChild(es);
         }
       }
