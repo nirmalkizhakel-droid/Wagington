@@ -417,20 +417,20 @@ function isVacationStart(key){
 function syncFromServer(){
   state.syncing = true;
   renderSyncDot();
-  // Load logs and vacations independently so one failure doesn't break the other
-  var logsPromise = loadLogs().catch(function(){ return {}; });
-  var vacPromise  = loadVacations().catch(function(){ return []; });
+  var logsPromise = loadLogs().catch(function(e){ console.log('logs err',e); return null; });
+  var vacPromise  = loadVacations().catch(function(e){ console.log('vac err',e); return null; });
   return Promise.all([logsPromise, vacPromise]).then(function(res){
-    state.logs      = res[0];
-    state.vacations = res[1];
-    state.loading   = false;
-    state.syncing   = false;
-    state.error     = null;
+    if(res[0] !== null) state.logs      = res[0];
+    if(res[1] !== null) state.vacations = res[1];
+    state.loading = false;
+    state.syncing = false;
+    // Only show error if BOTH failed
+    state.error = (res[0]===null && res[1]===null) ? 'Sync failed — tap to retry' : null;
     render();
   }).catch(function(e){
     state.syncing = false;
-    state.error   = 'Sync failed — check connection';
     state.loading = false;
+    state.error   = 'Sync failed — tap to retry';
     render();
   });
 }
@@ -471,13 +471,14 @@ function render(){
   var app = document.getElementById('app');
   app.innerHTML = '';
 
-  // Loading splash
-  if(state.loading){
+  // Loading splash — only show if genuinely first load with no data yet
+  if(state.loading && Object.keys(state.logs).length === 0){
     var sp = el('div','splash');
     sp.innerHTML = '<div class="splash-icon">🐾</div><div class="splash-title">Masha Walks</div><div class="spinner"></div><div class="splash-sub">Loading walks...</div>';
     app.appendChild(sp);
     return;
   }
+  state.loading = false;
 
   if(!state.user){ app.appendChild(renderLogin()); return; }
 
