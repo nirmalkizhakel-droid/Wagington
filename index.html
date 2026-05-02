@@ -417,7 +417,10 @@ function isVacationStart(key){
 function syncFromServer(){
   state.syncing = true;
   renderSyncDot();
-  return Promise.all([loadLogs(), loadVacations()]).then(function(res){
+  // Load logs and vacations independently so one failure doesn't break the other
+  var logsPromise = loadLogs().catch(function(){ return {}; });
+  var vacPromise  = loadVacations().catch(function(){ return []; });
+  return Promise.all([logsPromise, vacPromise]).then(function(res){
     state.logs      = res[0];
     state.vacations = res[1];
     state.loading   = false;
