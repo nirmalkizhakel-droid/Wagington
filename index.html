@@ -162,8 +162,14 @@ function supaFetch(method, path, body){
   };
   if(body) opts.body = JSON.stringify(body);
   return fetch(SUPA_URL+'/rest/v1/'+path, opts).then(function(r){
-    if(!r.ok) return r.text().then(function(t){ throw new Error(t); });
+    if(!r.ok) return r.text().then(function(t){ 
+      console.error('Supabase error:', method, path, r.status, t);
+      throw new Error(r.status+': '+t); 
+    });
     return r.json().catch(function(){ return []; });
+  }).catch(function(e){
+    console.error('Fetch failed:', method, path, e.message);
+    throw e;
   });
 }
 
