@@ -704,6 +704,74 @@ function renderCalendar(schedule){
   return wrap;
 }
 
+
+// ─── VACATION MODAL ───────────────────────────────────────────────────────────
+function renderVacModal(){
+  var overlay=el('div','modal-overlay');
+  overlay.onclick=function(e){ if(e.target===overlay){ state.showVacModal=false; render(); } };
+  var modal=el('div','modal');
+
+  var mt=el('div','modal-title'); mt.textContent='🏖️ Masha Vacation Dates'; modal.appendChild(mt);
+
+  if(state.vacations.length>0){
+    var vl=el('div','vac-list');
+    state.vacations.forEach(function(v){
+      var vi=el('div','vac-item');
+      var vt=el('div','vac-item-text'); vt.textContent=v.start_date+' → '+v.end_date; vi.appendChild(vt);
+      var vd=el('button','vac-del'); vd.textContent='✕';
+      (function(vs,ve){
+        vd.onclick=function(){
+          state.syncing=true; renderSyncDot();
+          deleteVacation(vs,ve).then(syncFromServer).catch(function(){ state.error='Delete failed'; state.syncing=false; render(); });
+        };
+      })(v.start_date,v.end_date);
+      vi.appendChild(vd); vl.appendChild(vi);
+    });
+    modal.appendChild(vl);
+  } else {
+    var none=el('div',''); none.style.cssText='font-size:13px;color:var(--b4);margin-bottom:14px;font-style:italic;';
+    none.textContent='No vacations added yet'; modal.appendChild(none);
+  }
+
+  var addTitle=el('div',''); addTitle.style.cssText='font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--b4);margin-bottom:10px;';
+  addTitle.textContent='Add New Vacation'; modal.appendChild(addTitle);
+
+  var fromRow=el('div','modal-row');
+  var fromLbl=el('div','modal-label'); fromLbl.textContent='From'; fromRow.appendChild(fromLbl);
+  var fromIn=el('input','modal-input'); fromIn.type='date'; fromIn.value=state.vacFrom||'';
+  fromIn.onchange=function(){ state.vacFrom=this.value; };
+  fromRow.appendChild(fromIn); modal.appendChild(fromRow);
+
+  var toRow=el('div','modal-row');
+  var toLbl=el('div','modal-label'); toLbl.textContent='To'; toRow.appendChild(toLbl);
+  var toIn=el('input','modal-input'); toIn.type='date'; toIn.value=state.vacTo||'';
+  toIn.onchange=function(){ state.vacTo=this.value; };
+  toRow.appendChild(toIn); modal.appendChild(toRow);
+
+  var hint=el('div',''); hint.style.cssText='font-size:11px;color:var(--b4);margin-bottom:14px;';
+  hint.textContent='Morning of start date stays with Nisha/Nirmal. All other slots go to Wagington.';
+  modal.appendChild(hint);
+
+  var btnRow=el('div',''); btnRow.style.cssText='display:flex;gap:10px;';
+  var saveBtn=el('button','btn btn-confirm'); saveBtn.textContent='Save Vacation';
+  saveBtn.onclick=function(){
+    if(!state.vacFrom||!state.vacTo){ alert('Please select both dates'); return; }
+    if(state.vacTo<state.vacFrom){ alert('End date must be after start date'); return; }
+    state.syncing=true; renderSyncDot();
+    saveVacation(state.vacFrom,state.vacTo).then(function(){
+      state.showVacModal=false;
+      return syncFromServer();
+    }).catch(function(){ state.error='Save failed'; state.syncing=false; render(); });
+  };
+  var cancelBtn=el('button','btn btn-undo'); cancelBtn.textContent='Cancel';
+  cancelBtn.onclick=function(){ state.showVacModal=false; render(); };
+  btnRow.appendChild(saveBtn); btnRow.appendChild(cancelBtn);
+  modal.appendChild(btnRow);
+
+  overlay.appendChild(modal);
+  return overlay;
+}
+
 // ─── LOGIN ────────────────────────────────────────────────────────────────────
 function renderLogin(){
   var wrap=el('div',''); wrap.style.cssText='max-width:430px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;background:var(--bg);';
