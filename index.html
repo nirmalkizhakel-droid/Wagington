@@ -565,7 +565,7 @@ function render(){
     var tmrwKey = dk(tmrw);
     var tmrwSched = schedule[tmrwKey] || {};
     var tmrwCard = el('div','card');
-    var tmrwTitle = el('div','card-title'); tmrwTitle.textContent = '📅 Tomorrow's Schedule'; tmrwCard.appendChild(tmrwTitle);
+    var tmrwTitle = el('div','card-title'); tmrwTitle.textContent = "📅 Tomorrow's Schedule"; tmrwCard.appendChild(tmrwTitle);
 
     var tmrwDate = el('div',''); tmrwDate.style.cssText='font-size:12px;color:var(--b4);font-weight:600;margin-bottom:12px;';
     tmrwDate.textContent = tmrw.toLocaleDateString('en-SG',{weekday:'long',day:'numeric',month:'long'});
